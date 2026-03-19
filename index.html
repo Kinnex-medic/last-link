@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinnex | Digitálny asistent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="max-w-4xl w-full text-center mb-12">
+        <h1 class="text-4xl font-extrabold text-slate-900 mb-4 italic">Kinnex</h1>
+        <p class="text-lg text-slate-600 italic">Pomáhame zvládať administratívu v čase, kedy na nej najmenej záleží.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
+        
+        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 hover:border-blue-500 transition-all group">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition">
+                <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-3">Zdravotnícky personál</h2>
+            <p class="text-slate-500 mb-8">Vstup pre lekárov a poverených pracovníkov na nahlasovanie úmrtí do systému.</p>
+            <button onclick="loginDoctor()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition">
+                Vstúpiť (AUTH)
+            </button>
+        </div>
+
+        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 hover:border-teal-500 transition-all group">
+            <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-teal-600 group-hover:text-white transition">
+                <i class="fa-solid fa-house-chimney-user"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-3">Pozostalá rodina</h2>
+            <p class="text-slate-500 mb-8">Sledovanie stavu notifikácií a správa digitálnej pozostalosti pomocou kódu.</p>
+            <a href="frontend-family/portal.html" class="block w-full text-center bg-teal-600 text-white py-4 rounded-xl font-bold hover:bg-teal-700 transition">
+                Sledovať progres
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        async function loginDoctor() {
+            const token = prompt("Zadajte váš autorizačný kľúč (napr. key-mudr-123):");
+            if (!token) return;
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/verify-doctor', {
+                    headers: { 'x-auth-token': token }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    sessionStorage.setItem('doctorToken', token);
+                    sessionStorage.setItem('doctorName', data.doctor_name);
+                    // Presmerovanie na rozhranie lekára
+                    window.location.href = "frontend-doctor/index.html";
+                } else {
+                    alert("Neplatný autorizačný kľúč!");
+                }
+            } catch (err) {
+                alert("Chyba pripojenia k API!");
+            }
+        }
+    </script>
+
+</body>
+</html>

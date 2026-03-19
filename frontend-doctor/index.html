@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Kinnex | Rozhranie lekára</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-8">
+
+    <div class="max-w-md mx-auto bg-white shadow-xl rounded-xl border-t-4 border-blue-600 p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-bold text-slate-800">Protokol: Exit</h1>
+            <button onclick="logout()" class="text-xs text-red-500 hover:underline">Odhlásiť</button>
+        </div>
+        
+        <form id="reportForm">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Rodné číslo zosnulého</label>
+                    <input id="rc" placeholder="xxxxxx/xxxx" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Meno a priezvisko</label>
+                    <input id="meno" placeholder="Ján Novák" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+    
+                <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium">Rodné priezvisko</label>
+                    <input type="text" id="maidenName" class="w-full border rounded p-2" placeholder="Ak je iné">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Rodinný stav</label>
+                    <select id="maritalStatus" class="w-full border rounded p-2">
+                        <option value="slobodny/a">Slobodný/á</option>
+                        <option value="zenaty/vdata">Ženatý/Vydatá</option>
+                        <option value="rozvedeny/a">Rozvedený/á</option>
+                        <option value="vdovec/vdova">Vdovec/Vdova</option>
+                    </select>
+                </div>
+            </div>
+            </div>
+    
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Dátum narodenia</label>
+                    <input type="date" id="birthDate" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Dátum úmrtia</label>
+                    <input type="datetime-local" id="deathDate" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+            </div>
+    
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-slate-700">Trvalý pobyt (Adresa)</label>
+                <textarea id="permanentResidence" rows="2" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="Ulica, číslo, PSČ, Obec"></textarea>
+            </div>
+    
+            <div class="mt-4">
+                <label class="block text-sm font-medium">Miesto úmrtia (Obec/Mesto)</label>
+                <input type="text" id="placeOfDeath" class="w-full border rounded p-2" required>
+            </div>
+    
+            <div class="mt-4">
+                <label class="block text-sm font-medium">Príčina smrti (MKCH kód)</label>
+                <input type="text" id="causeOfDeath" class="w-full border rounded p-2" placeholder="Napr. I21.9">
+            </div>
+    
+            <div id="res" class="mt-6 hidden p-4 bg-green-50 text-green-700 rounded border border-green-200 text-center">
+                <p class="text-sm font-medium">Správa bola úspešne odoslaná.</p>
+                <p class="text-xs mt-2 text-slate-500 uppercase tracking-widest">Kód pre rodinu:</p>
+                <b id="code" class="text-3xl block my-2 font-mono text-blue-700 tracking-tighter"></b>
+                <button onclick="window.print()" class="text-[10px] text-blue-400 underline">Vytlačiť potvrdenie</button>
+            </div>
+            <div class="pt-4">
+                <button onclick="sendReport()" id="sendBtn" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700 transition">
+                    AUTORIZOVAŤ A ODOSLAŤ
+                </button>
+            </div>
+             <div class="pt-4">
+                <button type="button" onclick="resetForm()" class="w-full bg-gray-500 text-white px-4 py-2 rounded">
+                    Zrušiť / Nový záznam
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="reports-container" style="margin-top: 50px; font-family: 'Segoe UI', sans-serif;">
+        <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">
+            Moje nedávne hlásenia (posledných 60 minút)
+        </h2>
+        
+        <table id="doctorReportsTable" style="width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <thead>
+                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 12px; text-align: left;">Kód rodiny</th>
+                    <th style="padding: 12px; text-align: left;">Meno zomrelého</th>
+                    <th style="padding: 12px; text-align: left;">Čas vytvorenia</th>
+                    <th style="padding: 12px; text-align: left;">Status</th>
+                    <th style="padding: 12px; text-align: center;">Zostáva času</th>
+                    <th style="padding: 12px; text-align: center;">Akcia</th>
+                </tr>
+            </thead>
+            <tbody id="reportsTableBody">
+                <tr><td colspan="6" style="text-align:center; padding: 20px;">Načítavam hlásenia...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+    
+
+<script>
+
+
+    const rcInput = document.getElementById('rc');
+
+    rcInput.addEventListener('input', function (e) {
+    let value = e.target.value.replace(/\D/g, ''); // Odstráni všetko, čo nie je číslo
+    
+    if (value.length > 6) {
+        // Formát: 000000/0000
+        e.target.value = value.slice(0, 6) + '/' + value.slice(6, 10);
+    } else {
+        e.target.value = value;
+    }
+});
+
+    // Ošetrenie vymazávania (Backspace)
+    rcInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace' && e.target.value.length === 7) {
+            // Ak je kurzor za lomkou a stlačíš backspace, vymaž aj lomku
+            e.target.value = e.target.value.slice(0, 6);
+        }
+    });
+    // 1. KONTROLA PRIHLÁSENIA
+    const token = sessionStorage.getItem('doctorToken');
+    if (!token) {
+        window.location.href = "../index.html";
+    }
+
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = "../index.html";
+    }
+
+    // 2. FUNKCIA ODOSLANIA
+
+    async function sendReport() {
+        // 1. Zistíme, či sme v režime úpravy
+        const isEditing = !!window.editingCode;
+        const editingCode = window.editingCode;
+
+    const data = {
+        deceased_rc: document.getElementById('rc').value.trim(),
+        deceased_name: document.getElementById('meno').value.trim(),
+        maiden_name: document.getElementById('maidenName').value.trim(),
+        marital_status: document.getElementById('maritalStatus').value,
+        birth_date: document.getElementById('birthDate').value,
+        death_date: document.getElementById('deathDate').value,
+        permanent_residence: document.getElementById('permanentResidence').value.trim(),
+        place_of_death: document.getElementById('placeOfDeath').value.trim(),
+        cause_of_death: document.getElementById('causeOfDeath').value.trim(),
+        doctor_id: sessionStorage.getItem('doctorName') || "MUDr. Systém",
+        status: "PENDING"
+    };
+
+    // VALIDÁCIA
+    if (data.deceased_name.length < 3) {
+        alert("Zadajte celé meno.");
+        return;
+    }
+
+    const rcRegex = /^\d{6}\/\d{3,4}$/;
+    if (!rcRegex.test(data.deceased_rc)) {
+        alert("Nesprávny formát rodného čísla!");
+        return;
+    }
+
+    if (!data.birth_date || !data.death_date) {
+        alert("Vyplňte dátumy.");
+        return;
+    }
+
+    const btn = document.getElementById('sendBtn');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "Spracovávam...";
+
+    // 2. Dynamicky nastavíme URL a Metódu
+    const url = isEditing 
+        ? `http://127.0.0.1:8000/api/v1/report/${editingCode}` 
+        : 'http://127.0.0.1:8000/api/v1/report';
+    
+    const method = isEditing ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'x-auth-token': sessionStorage.getItem('doctorToken') || "key-mudr-123"
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+
+            if (isEditing) {
+                alert("Záznam bol úspešne aktualizovaný.");
+                // Po úspešnej editácii vyčistíme "editačný mód"
+                window.editingCode = null; 
+            } else {
+                // Pri novom zázname ukážeme vygenerovaný kód
+                document.getElementById('code').innerText = result.family_code;
+                document.getElementById('res').classList.remove('hidden');
+            }
+
+            // --- JEDNODUCHÝ RESET CELÉHO FORMULÁRA ---
+            document.getElementById('reportForm').reset();
+            window.editingCode = null; // Nezabudni zrušiť editačný mód
+
+            btn.innerText = isEditing ? "Upravené ✓" : "Autorizované ✓";
+            btn.classList.replace('bg-blue-600', 'bg-green-600');
+            
+            // Voliteľné: Ak máš funkciu na refresh zoznamu, zavolaj ju
+            if (typeof loadDoctorReports === 'function') loadDoctorReports();
+
+        } else {
+            const error = await response.json();
+            alert("Server odmietol dáta: " + (error.detail || "Neznáma chyba"));
+            
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }   
+
+    } catch (err) {
+        console.error(err);
+        alert("Server nedostupný.");
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
+}
+
+    async function loadDoctorReports() {
+        const token = "key-mudr-123"; // Tu doplň reálny token prihláseného lekára
+        const tableBody = document.getElementById('reportsTableBody');
+
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/v1/doctor/my-reports', {
+            headers: { 'x-auth-token': token }
+        });
+        const reports = await response.json();
+
+        tableBody.innerHTML = ''; // Vyčistiť tabuľku
+
+        if (reports.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Nenašli sa žiadne hlásenia.</td></tr>';
+            return;
+        }
+
+        reports.forEach(report => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = "1px solid #eee";
+
+            // Logika pre farbu a tlačidlo
+            const editButton = report.is_editable 
+                ? `<button onclick="editReport('${report.family_code}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Upraviť</button>`
+                : `<span style="color: #95a5a6; font-size: 12px;">🔒 Uzamknuté</span>`;
+
+            const timerColor = report.minutes_left < 10 ? 'red' : '#27ae60';
+
+            row.innerHTML = `
+                <td style="padding: 12px; font-weight: bold; color: #34495e;">${report.family_code}</td>
+                <td style="padding: 12px;">${report.deceased_name}</td>
+                <td style="padding: 12px; color: #7f8c8d;">${report.created_at}</td>
+                <td style="padding: 12px;"><span style="background: #e1f5fe; padding: 3px 8px; border-radius: 10px; font-size: 11px;">${report.status}</span></td>
+                <td style="padding: 12px; text-align: center; color: ${timerColor}; font-weight: bold;">
+                    ${report.is_editable ? report.minutes_left + ' min' : '-'}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    ${editButton}
+                    <button onclick="downloadPDF('${report.family_code}')" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;">PDF</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error("Chyba pri načítaní:", error);
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Chyba komunikácie so serverom.</td></tr>';
+    }
+}
+
+
+    // Funkcie pre tlačidlá
+    async function editReport(code) {
+        const token = "key-mudr-123"; 
+    
+    try {
+        // Musí to byť GET, aby sme dáta načítali
+        const response = await fetch(`http://127.0.0.1:8000/api/v1/report/${code}`, {
+            method: 'GET', 
+            headers: { 'x-auth-token': token }
+        });
+        
+        if (!response.ok) throw new Error("Server nevrátil dáta pre kód: " + code);
+        
+        const data = await response.json();
+
+        // Pomocná funkcia: Ak element neexistuje, nevypíše chybu, len upozornenie do konzoly
+        const fill = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value || "";
+            else console.warn(`Element s ID "${id}" nebol nájdený v HTML!`);
+        };
+
+        // NAPĹŇANIE POLÍ (Skontrolované podľa tvojho HTML)
+        fill('meno', data.deceased_name);
+        fill('rc', data.deceased_rc);
+        fill('maidenName', data.maiden_name);
+        fill('maritalStatus', data.marital_status);
+        fill('birthDate', data.birth_date);
+        fill('permanentResidence', data.permanent_residence);
+        fill('placeOfDeath', data.place_of_death); // Opravené D
+        fill('causeOfDeath', data.cause_of_death); // Opravené D
+        
+        if(data.death_date) {
+            fill('deathDate', data.death_date.substring(0, 16));
+        }
+
+        // REŽIM ÚPRAVY
+        window.editingCode = code;
+        
+        const submitBtn = document.getElementById('sendBtn');
+        if(submitBtn) {
+            submitBtn.innerText = "Uložiť zmeny (Update)";
+            submitBtn.style.backgroundColor = "#f39c12"; 
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        console.log("Formulár pripravený na úpravu kódu:", code);
+
+    } catch (error) {
+        console.error("Detailná chyba v editReport:", error);
+        alert("Chyba: " + error.message);
+    }
+}
+
+function downloadPDF(code) {
+    window.open(`http://127.0.0.1:8000/api/v1/report/pdf/${code}`, '_blank');
+}
+
+// Spustiť pri načítaní stránky
+loadDoctorReports();
+// Automaticky obnoviť každú minútu, aby sa aktualizovali odpočty
+setInterval(loadDoctorReports, 60000);
+
+
+function resetForm() {
+    window.location.reload();
+}
+
+</script>
+</body>
+</html>

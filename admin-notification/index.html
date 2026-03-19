@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KINNEX | Inštitucionálny Stream</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glow-green { box-shadow: 0 0 15px rgba(34, 197, 94, 0.4); }
+        .notification-pulse { animation: pulse-bg 2s infinite; }
+        @keyframes pulse-bg {
+            0% { background-color: #f0f9ff; }
+            50% { background-color: #e0f2fe; }
+            100% { background-color: #f0f9ff; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-xl shadow-sm border-b-4 border-blue-600 mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 flex items-center">
+                    <span class="bg-blue-600 text-white px-2 py-1 rounded mr-2 text-sm">ADMIN</span>
+                    KINNEX Stream
+                </h1>
+                <p class="text-slate-500 text-sm mt-1">Monitorovanie prijatých hlásení v reálnom čase (JSON API)</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center space-x-4">
+                <div id="statusIndicator" class="flex items-center px-3 py-1 bg-green-50 border border-green-200 rounded-full">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse glow-green"></span>
+                    <span class="text-xs font-semibold text-green-700 uppercase tracking-wider">Systém Aktívny</span>
+                </div>
+                <button onclick="location.reload()" class="text-slate-400 hover:text-blue-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="alertBox" class="hidden transform transition-all duration-500 scale-95 opacity-0 mb-8">
+            <div class="bg-red-600 text-white p-5 rounded-xl shadow-2xl flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="bg-white/20 p-3 rounded-full mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold">Nové automatizované hlásenie</h3>
+                        <p id="alertMessage" class="opacity-90 text-sm font-medium italic"></p>
+                    </div>
+                </div>
+                <button onclick="dismissAlert()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition">
+                    POTVRDIŤ PRIJATIE
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 class="font-bold text-slate-700">Prichádzajúci dátový tok (JSON)</h3>
+                <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded font-mono uppercase">Endpoint: /api/v1/stream</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-widest border-b border-slate-100">
+                            <th class="p-4 font-semibold">Čas prijatia</th>
+                            <th class="p-4 font-semibold">Identifikátor (RČ)</th>
+                            <th class="p-4 font-semibold">Meno a Priezvisko</th>
+                            <th class="p-4 font-semibold">Zdroj dát</th>
+                            <th class="p-4 font-semibold text-center">Akcia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="streamTableBody" class="divide-y divide-slate-50">
+                        <tr id="emptyRow">
+                            <td colspan="5" class="p-12 text-center text-slate-400">
+                                <div class="flex flex-col items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                    </svg>
+                                    <p class="text-sm">Čakanie na prichádzajúci JSON objekt...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center">
+            <p class="text-slate-400 text-[10px] uppercase tracking-widest">
+                KINNEX SECURE GATEWAY v1.0 | Šifrované pomocou AES-256
+            </p>
+        </div>
+    </div>
+
+    <script>
+     // 1. Pripojenie - Používame 127.0.0.1 namiesto localhost pre stabilitu
+const socket = new WebSocket("ws://127.0.0.1:8000/ws/stream");
+
+socket.onopen = function(e) {
+    console.log("LOG: Spojenie s KINNEX CORE nadviazané.");
+    updateStatus(true);
+};
+
+socket.onmessage = function(event) {
+    // 1. Okamžite vypíš do konzoly, čo prišlo (uvidíš to v F12)
+    console.log("!!! DÁTA DORAZILI NA FRONTEND !!!", event.data);
+
+    try {
+        const data = JSON.parse(event.data);
+        
+        // 2. Testovací alert (ak toto vyskočí, vieme, že JS žije)
+        // Po úspešnom teste tento riadok vymaž
+        if(data.meno === "SYSTÉMOVÝ TEST") {
+             console.log("Spracovávam testovací signál...");
+        }
+
+        processIncomingJSON(data);
+    } catch (err) {
+        console.error("Chyba pri spracovaní prijatých dát:", err);
+    }
+};
+
+socket.onclose = function(e) {
+    console.warn("LOG: Spojenie prerušené.");
+    updateStatus(false);
+    // Skúsiť sa znova pripojiť o 5 sekúnd
+    setTimeout(() => location.reload(), 5000);
+};
+
+function updateStatus(online) {
+    const indicator = document.getElementById('statusIndicator');
+    if (online) {
+        indicator.innerHTML = `<span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse glow-green"></span>
+                               <span class="text-xs font-semibold text-green-700 uppercase tracking-wider">LIVE DATA STREAM</span>`;
+    } else {
+        indicator.innerHTML = `<span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                               <span class="text-xs font-semibold text-red-700 uppercase tracking-wider">OFFLINE - RECONNECTING</span>`;
+    }
+}
+
+function processIncomingJSON(data) {
+    console.log("Spracovávam objekt:", data);
+
+    // 1. Kontrola elementov - ak neexistujú, vypíšeme chybu do konzoly
+    const tableBody = document.getElementById('streamTableBody');
+    const alertBox = document.getElementById('alertBox');
+    const alertMsg = document.getElementById('alertMessage');
+
+    if (!tableBody) {
+        console.error("CHYBA: Element 'streamTableBody' nebol v HTML nájdený!");
+        return;
+    }
+
+    // 2. Odstránenie prázdneho riadku (ak tam je)
+    const emptyRow = document.getElementById('emptyRow');
+    if (emptyRow) emptyRow.style.display = 'none';
+
+    // 3. Audio (skúsime, či prejde)
+    try {
+        const audio = new Audio('https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3');
+        audio.play().catch(() => console.log("Audio blokované prehliadačom (vyžaduje prvý klik na stránku)"));
+    } catch(e) {}
+
+    // 4. Zobrazenie Alert Boxu (ak existuje)
+    if (alertBox && alertMsg) {
+        alertMsg.innerText = `Nové hlásenie: ${data.meno || 'Neznámy'} | RČ: ${data.rc || '---'} | Miesto: ${data.miesto || '---'}`;
+        alertBox.classList.remove('hidden');
+        setTimeout(() => {
+            alertBox.classList.add('scale-100', 'opacity-100');
+        }, 50);
+    }
+
+    // 5. Pridanie riadku do tabuľky
+    const newRow = document.createElement('tr');
+    newRow.className = 'border-b bg-blue-50/50 notification-pulse transition-all duration-1000 text-slate-800';
+    
+    // Použijeme predvolené hodnoty, ak by v JSON niečo chýbalo
+    const cas = data.cas || new Date().toLocaleTimeString();
+    const rc = data.rc || '---';
+    const meno = data.meno || 'Neznáme meno';
+    const miesto = data.miesto || 'Nezadané';
+
+    newRow.innerHTML = `
+        <td class="p-4 text-sm font-mono text-blue-600 font-bold">${cas}</td>
+        <td class="p-4 text-sm font-mono">${rc}</td>
+        <td class="p-4 text-sm font-bold">${meno}</td>
+        <td class="p-4 text-xs font-semibold text-slate-500 uppercase">${miesto}</td>
+        <td class="p-4 text-center">
+            <button class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold hover:bg-blue-600 transition">
+                SPRACOVAŤ
+            </button>
+        </td>
+    `;
+    
+    tableBody.prepend(newRow);
+    console.log("Riadok bol úspešne pridaný do tabuľky.");
+}
+
+
+function dismissAlert() {
+    const alertBox = document.getElementById('alertBox');
+    alertBox.classList.replace('scale-100', 'scale-95');
+    alertBox.classList.replace('opacity-100', 'opacity-0');
+    setTimeout(() => alertBox.classList.add('hidden'), 500);
+}
+</script>
+</body>
+</html>

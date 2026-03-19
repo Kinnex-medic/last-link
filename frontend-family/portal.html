@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinnex | Sprievodca Pozostalých</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .input-focus:focus { outline: none;                      /* Odstráni ten škaredý základný rámik */
+        border-color: #2563eb;              /* Sýta modrá na okraji */
+        box-shadow: 0 0 0 4px #dbeafe;      /* Toto JE ten "ring" v čistom CSS */
+        transition: all 0.2s ease-in-out;}
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <nav class="bg-white shadow-sm py-4 mb-8">
+        <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
+            <span class="text-xl font-semibold text-slate-800 italic">Kinnex</span>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-green-600 flex items-center gap-1">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Bezpečné 2FA overenie
+                </span>
+                <button onclick="logoutFamily()" class="text-sm font-medium text-red-500 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-md transition-colors border border-red-100">
+                    Odhlásiť sa
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 pb-12">
+        <div id="loginSection" class="bg-white rounded-2xl shadow-xl p-8 text-center border border-slate-100">
+            <div class="mb-6">
+                <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-shield text-blue-600 fa-2xl fa-beat"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">Zabezpečený prístup</h2>
+                <p class="text-slate-500">Zadajte kód od lekára a dátum narodenia zosnulého pre overenie identity.</p>
+            </div>
+            
+            <div class="max-w-sm mx-auto space-y-4">
+                <div>
+                    <label class="block text-left text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Prístupový kód</label>
+                    <input type="text" id="accessCodeInput" placeholder="Napr. LX-442" 
+                           class="uppercase text-center text-xl font-mono tracking-widest border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 w-full">
+                </div>
+                
+                <div>
+                    <label class="block text-left text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Dátum narodenia zosnulého</label>
+                    <input type="date" id="birthDateInput" 
+                           class="text-center text-lg border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 w-full text-slate-700">
+                </div>
+
+                <button onclick="checkStatus()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-xl transition shadow-lg mt-2">
+                    Overiť a vstúpiť
+                </button>
+            </div>
+        </div>
+
+        <div id="dashboard" class="hidden space-y-6">
+            <div class="bg-blue-600 rounded-xl p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="relative z-10">
+                    <h2 class="text-3xl font-bold mb-1" id="deceasedName">---</h2>
+                    <p class="opacity-80">Administratívny proces je v behu</p>
+                    <div class="mt-6 bg-blue-500/30 rounded-full h-3 w-full overflow-hidden">
+                        <div id="progressBar" class="bg-white h-full transition-all duration-1000" style="width: 10%"></div>
+                    </div>
+                    <p class="mt-2 text-sm italic" id="statusMessage">Prebieha overovanie na matrike...</p>
+                </div>
+                <i class="fa-solid fa-file-invoice absolute -right-4 -bottom-4 text-white/10 text-9xl"></i>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+                    <div class="p-5 border-b border-slate-50 bg-slate-50/50">
+                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-university mr-2"></i> Stav notifikácií</h3>
+                    </div>
+                    <div id="notifList" class="divide-y divide-slate-50"></div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6">
+                    <h3 class="font-bold text-slate-700 mb-4"><i class="fa-solid fa-list-check mr-2"></i> Čo treba urobiť ďalej</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3 text-sm text-slate-600">
+                            <span class="bg-amber-100 text-amber-700 rounded-full h-5 w-5 flex items-center justify-center shrink-0 text-[10px] font-bold">1</span>
+                            Kontaktovať pohrebnú službu (máte digitálne potvrdenie v systéme).
+                        </li>
+                        <li class="flex items-start gap-3 text-sm text-slate-600">
+                            <span class="bg-blue-100 text-blue-700 rounded-full h-5 w-5 flex items-center justify-center shrink-0 text-[10px] font-bold">2</span>
+                            Vyčkať na pridelenie notára pre dedičské konanie.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="documentsSection" class="mt-6 p-6 bg-blue-50 rounded-2xl border border-blue-100 hidden">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h4 class="text-blue-800 font-bold flex items-center">
+                            <i class="fa-solid fa-file-pdf mr-2"></i> Úradné dokumenty pripravené
+                        </h4>
+                        <p class="text-sm text-blue-600">Oficiálny List o prehliadke mŕtveho s digitálnym podpisom.</p>
+                    </div>
+                    <button onclick="downloadPDF()" class="bg-blue-600 text-white px-6 py-3 rounded-xl shadow-md hover:bg-blue-700 transition font-bold flex items-center">
+                        <i class="fa-solid fa-download mr-2"></i> Stiahnuť PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let statusInterval = null;
+
+        // --- 1. AUTOMATICKÁ POMLČKA V KÓDE (UX) ---
+        // const codeInput = document.getElementById('accessCodeInput');
+        // codeInput.addEventListener('input', function(e) {
+        //     let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        //     if (val.length > 2) {
+        //         // Pridá pomlčku po 2 znakoch (napr. LX-123)
+        //         e.target.value = val.substring(0, 2) + '-' + val.substring(2, 5);
+        //     } else {
+        //         e.target.value = val;
+        //     }
+        // });
+
+        async function checkStatus() {
+            const code = document.getElementById('accessCodeInput').value.trim();
+            const dob = document.getElementById('birthDateInput').value;
+            
+            if (!code || !dob) {
+                alert("Prosím zadajte kód aj dátum narodenia.");
+                return;
+            }
+
+            try {
+                // POSIELAME OBA ÚDAJE NA SERVER (Zvýšená bezpečnosť)
+                // Uprav si URL podľa tvojho backendu, ak treba pridať query parameter pre DOB
+                const response = await fetch(`http://127.0.0.1:8000/status/${code}?dob=${dob}`);
+                
+                if (!response.ok) {
+                    alert("Neplatná kombinácia kódu a dátumu narodenia.");
+                    stopAutoRefresh();
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // Uloženie do session pre refresh
+                sessionStorage.setItem('lastAccessCode', code);
+                sessionStorage.setItem('lastAccessDob', dob);
+                
+                renderDashboard(data);
+
+            } catch (err) {
+                console.error("Chyba overenia:", err);
+            }
+        }
+
+        function renderDashboard(data) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('deceasedName').innerText = data.deceased;
+            
+            if (data.status === 'COMPLETED') {
+                document.getElementById('documentsSection').classList.remove('hidden');
+                if(document.getElementById('statusMessage')) {
+                    document.getElementById('statusMessage').innerText = "Všetky úkony boli dokončené.";
+                }
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+
+            const notifList = document.getElementById('notifList');
+            notifList.innerHTML = '';
+            
+            let successCount = 0;
+            data.notifications.forEach(n => {
+                const isFinished = (n.state === 'DONE');
+                if(isFinished) successCount++;
+                
+                const item = document.createElement('div');
+                item.className = 'p-4 flex justify-between items-center border-b last:border-0';
+                item.innerHTML = `
+                    <span class="text-slate-700 font-medium">${n.target}</span>
+                    <span class="${isFinished ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'} px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-sm">
+                        <i class="fa-solid ${isFinished ? 'fa-check-circle' : 'fa-arrows-rotate fa-spin'} mr-2"></i>
+                        ${isFinished ? 'VYBAVENÉ' : 'V PROCESE'}
+                    </span>
+                `;
+                notifList.appendChild(item);
+            });
+
+            const total = data.notifications.length;
+            const progress = (successCount / total) * 100;
+            document.getElementById('progressBar').style.width = `${Math.max(progress, 10)}%`;
+        }
+
+        function startAutoRefresh() {
+            if (!statusInterval) statusInterval = setInterval(checkStatus, 5000);
+        }
+
+        function stopAutoRefresh() {
+            if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+        }
+
+        function logoutFamily() {
+            sessionStorage.clear();
+            location.reload();
+        }
+
+        async function downloadPDF() {
+            const code = document.getElementById('accessCodeInput').value.trim();
+            window.open(`http://localhost:8000/api/v1/report/pdf/${code}`, '_blank');
+        }
+
+        // Auto-login pri refreshnutí stránky
+        window.onload = function() {
+            const savedCode = sessionStorage.getItem('lastAccessCode');
+            const savedDob = sessionStorage.getItem('lastAccessDob');
+            if (savedCode && savedDob) {
+                document.getElementById('accessCodeInput').value = savedCode;
+                document.getElementById('birthDateInput').value = savedDob;
+                checkStatus();
+            }
+        };
+    </script>
+</body>
+</html>
